@@ -108,6 +108,52 @@ namespace DataBass
 
 
 
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            var selectedWarehouse = cmbWarehouse.SelectedItem as dynamic;
+            var selectedProduct = cmbProduct.SelectedItem as dynamic;
+
+            if (selectedWarehouse != null && selectedProduct != null)
+            {
+                int warehouseId = selectedWarehouse.Id;
+                int productId = selectedProduct.Id;
+
+                // Определяем, к какому складу относится запись (warehouse1 или warehouse2)
+                string warehouseTable = warehouseId == 1 ? "warehouse1" : "warehouse2";
+
+                // Запрос на удаление товара с выбранного склада
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    // Запрос на удаление товара с склада
+                    var query = $@"
+                DELETE FROM {warehouseTable} 
+                WHERE good_id = @productId;
+            ";
+
+                    var cmd = new NpgsqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@productId", productId);
+                    var rowsAffected = cmd.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        MessageBox.Show("Товар успешно удален с выбранного склада.");
+                    }
+                    else
+                    {
+                        MessageBox.Show("Товар не найден на выбранном складе.");
+                    }
+                }
+
+                // Закрываем форму после удаления
+                this.Close();
+            }
+            else
+            {
+                MessageBox.Show("Пожалуйста, выберите склад и продукт.");
+            }
+        }
 
         // Обработчик кнопки "Отмена"
         private void btnCancel_Click(object sender, EventArgs e)

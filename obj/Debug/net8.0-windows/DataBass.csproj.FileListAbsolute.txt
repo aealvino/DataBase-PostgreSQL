@@ -26,3 +26,4 @@ D:\c#\DataBass\DataBass\obj\Debug\net8.0-windows\DataBass4.LoginForm.resources
 D:\c#\DataBass\DataBass\obj\Debug\net8.0-windows\DataBass.GoodForm.resources
 D:\c#\DataBass\DataBass\obj\Debug\net8.0-windows\DataBass.SalesForm.resources
 D:\c#\DataBass\DataBass\obj\Debug\net8.0-windows\DataBass.ManagerForm.resources
+D:\c#\DataBass\DataBass\obj\Debug\net8.0-windows\DataBass.sourcelink.json

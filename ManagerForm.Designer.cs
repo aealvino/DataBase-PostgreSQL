@@ -11,6 +11,7 @@
         private NumericUpDown nudQuantity;
         private Button btnSave;
         private Button btnCancel;
+        private System.Windows.Forms.Button btnDelete;
 
         protected override void Dispose(bool disposing)
         {
@@ -23,6 +24,7 @@
 
         private void InitializeComponent()
         {
+            this.btnDelete = new System.Windows.Forms.Button();
             this.lblWarehouse = new System.Windows.Forms.Label();
             this.lblProduct = new System.Windows.Forms.Label();
             this.lblQuantity = new System.Windows.Forms.Label();
@@ -113,6 +115,21 @@
             // 
             // ManagerForm
             // 
+
+
+            // 
+            // btnDelete
+            // 
+            this.btnDelete.Location = new System.Drawing.Point(120, 140); // Позиция кнопки
+            this.btnDelete.Name = "btnDelete";
+            this.btnDelete.Size = new System.Drawing.Size(75, 23);
+            this.btnDelete.TabIndex = 8;
+            this.btnDelete.Text = "Удалить";
+            this.btnDelete.UseVisualStyleBackColor = true;
+            this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
+
+
+
             this.ClientSize = new System.Drawing.Size(350, 150);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnSave);

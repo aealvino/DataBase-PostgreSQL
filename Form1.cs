@@ -195,6 +195,43 @@ namespace DataBass
         {
             if (tabControl.SelectedTab == tabManagerLog)
             {
+                // Проверяем, что выбрана строка для удаления
+                if (dgvManagerLog.SelectedRows.Count == 0)
+                {
+                    MessageBox.Show("Выберите товар для удаления!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Получаем ID товара из выбранной строки
+                int selectedProductId = Convert.ToInt32(dgvManagerLog.SelectedRows[0].Cells["ТоварID"].Value);
+
+                // Запрос для удаления товара из базы данных
+                string deleteQuery = @"
+            DELETE FROM goods
+            WHERE id = @ProductId;
+        ";
+
+                try
+                {
+                    // Выполнение запроса на удаление
+                    using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                    {
+                        connection.Open();
+                        using (NpgsqlCommand command = new NpgsqlCommand(deleteQuery, connection))
+                        {
+                            command.Parameters.AddWithValue("@ProductId", selectedProductId);
+                            command.ExecuteNonQuery();
+                        }
+                    }
+
+                    // Обновляем данные в таблице после удаления
+                    LoadManagerLogData();
+                    MessageBox.Show("Товар успешно удален.", "Удаление", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при удалении товара: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             else if (tabControl.SelectedTab == tabGoods)
             {
