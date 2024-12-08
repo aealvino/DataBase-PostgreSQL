@@ -20,7 +20,6 @@ namespace DataBass
             LoadData(); // Загрузка данных о товарах и складах
         }
 
-
         // Метод для загрузки данных о складах и товарах
         private void LoadData()
         {
@@ -45,8 +44,6 @@ namespace DataBass
         }
 
         // Обработчик кнопки "Сохранить"
-        // Обработчик кнопки "Сохранить"
-        // Обработчик кнопки "Сохранить"
         private void btnSave_Click(object sender, EventArgs e)
         {
             var selectedWarehouse = cmbWarehouse.SelectedItem as dynamic;
@@ -57,7 +54,6 @@ namespace DataBass
                 int warehouseId = selectedWarehouse.Id;
                 int productId = selectedProduct.Id;
                 nudQuantity.Maximum = decimal.MaxValue; // Устанавливаем максимальное значение
-                                                        // Получаем значение количества товара из NumericUpDown
                 int quantity = (int)nudQuantity.Value;  // Заменяем на Value, а не Maximum
 
                 // Проверяем, что количество не отрицательное
@@ -67,7 +63,6 @@ namespace DataBass
                     return;
                 }
 
-
                 // Определяем, к какому складу относится запись (warehouse1 или warehouse2)
                 string warehouseTable = warehouseId == 1 ? "warehouse1" : "warehouse2";
 
@@ -76,17 +71,16 @@ namespace DataBass
                 {
                     conn.Open();
 
-                    // Запрос на добавление товара на склад с обновлением количества
                     var query = $@"
-                INSERT INTO {warehouseTable} (good_id, good_count) 
-                VALUES (@productId, @quantity) 
-                ON CONFLICT (good_id) 
-                DO UPDATE SET good_count = {warehouseTable}.good_count + @quantity;
-            ";
+                        INSERT INTO {warehouseTable} (good_id, good_count) 
+                        VALUES (@productId, @quantity) 
+                        ON CONFLICT (good_id) 
+                        DO UPDATE SET good_count = {warehouseTable}.good_count + @quantity;
+                    ";
 
                     var cmd = new NpgsqlCommand(query, conn);
                     cmd.Parameters.AddWithValue("@productId", productId);
-                    cmd.Parameters.AddWithValue("@quantity", quantity);  // Используем введенное количество
+                    cmd.Parameters.AddWithValue("@quantity", quantity);
                     cmd.ExecuteNonQuery();
                 }
 
@@ -106,8 +100,7 @@ namespace DataBass
             }
         }
 
-
-
+        // Обработчик кнопки "Удалить"
         private void btnDelete_Click(object sender, EventArgs e)
         {
             var selectedWarehouse = cmbWarehouse.SelectedItem as dynamic;
@@ -126,11 +119,10 @@ namespace DataBass
                 {
                     conn.Open();
 
-                    // Запрос на удаление товара с склада
                     var query = $@"
-                DELETE FROM {warehouseTable} 
-                WHERE good_id = @productId;
-            ";
+                        DELETE FROM {warehouseTable} 
+                        WHERE good_id = @productId;
+                    ";
 
                     var cmd = new NpgsqlCommand(query, conn);
                     cmd.Parameters.AddWithValue("@productId", productId);
@@ -152,6 +144,82 @@ namespace DataBass
             else
             {
                 MessageBox.Show("Пожалуйста, выберите склад и продукт.");
+            }
+        }
+
+        // Обработчик кнопки "Изменить" (для обновления информации о товаре и количестве)
+        // Обработчик кнопки "Изменить" (для обновления информации о товаре и количестве)
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            var selectedWarehouse = cmbWarehouse.SelectedItem as dynamic;
+            var selectedProduct = cmbProduct.SelectedItem as dynamic;
+
+            if (selectedWarehouse != null && selectedProduct != null)
+            {
+                int warehouseId = selectedWarehouse.Id;
+                int productId = selectedProduct.Id;
+                int quantity = (int)nudQuantity.Value;  // Получаем количество товара из NumericUpDown
+
+                // Проверяем, что количество не отрицательное
+                if (quantity <= 0)
+                {
+                    MessageBox.Show("Количество товара должно быть больше 0.");
+                    return;
+                }
+
+                string warehouseTable = warehouseId == 1 ? "warehouse1" : "warehouse2";
+
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    // Обновление количества товара на складе
+                    var query = $@"
+                UPDATE {warehouseTable} 
+                SET good_count = @quantity 
+                WHERE good_id = @productId;
+            ";
+
+                    var cmd = new NpgsqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@productId", productId);
+                    cmd.Parameters.AddWithValue("@quantity", quantity);  // Обновление количества товара
+                    var rowsAffected = cmd.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        MessageBox.Show("Информация о товаре на складе успешно обновлена.");
+                    }
+                    else
+                    {
+                        MessageBox.Show("Товар не найден на складе.");
+                    }
+                }
+
+                // Закрываем форму после обновления
+                this.Close();
+            }
+            else
+            {
+                MessageBox.Show("Пожалуйста, выберите склад и продукт.");
+            }
+        }
+
+        public void SetInitialValues(int goodId, int warehouse1Count, int warehouse2Count)
+        {
+            // Устанавливаем начальное значение для товара
+            cmbProduct.SelectedItem = cmbProduct.Items.Cast<dynamic>().FirstOrDefault(item => item.Id == goodId);
+
+            // Устанавливаем количество товара на складе в зависимости от выбранного склада
+            // Пример: если на первом складе больше, показываем склад 1
+            if (warehouse1Count > 0)
+            {
+                cmbWarehouse.SelectedItem = cmbWarehouse.Items.Cast<dynamic>().FirstOrDefault(item => item.Id == 1);
+                nudQuantity.Value = warehouse1Count;
+            }
+            else if (warehouse2Count > 0)
+            {
+                cmbWarehouse.SelectedItem = cmbWarehouse.Items.Cast<dynamic>().FirstOrDefault(item => item.Id == 2);
+                nudQuantity.Value = warehouse2Count;
             }
         }
 

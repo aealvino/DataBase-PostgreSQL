@@ -272,6 +272,45 @@ namespace DataBass
         {
             if (tabControl.SelectedTab == tabManagerLog)
             {
+                // Проверяем, что выбрана строка для редактирования
+                if (dgvManagerLog.SelectedRows.Count == 0)
+                {
+                    MessageBox.Show("Пожалуйста, выберите товар для редактирования.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Получаем ID товара и склад из выбранной строки
+                int goodId = Convert.ToInt32(dgvManagerLog.SelectedRows[0].Cells["ТоварID"].Value);
+                string warehouse1Count = dgvManagerLog.SelectedRows[0].Cells["Склад1"].Value.ToString();
+                string warehouse2Count = dgvManagerLog.SelectedRows[0].Cells["Склад2"].Value.ToString();
+
+                // Преобразуем строки в целые числа
+                int warehouse1CountInt;
+                int warehouse2CountInt;
+
+                if (int.TryParse(warehouse1Count, out warehouse1CountInt) && int.TryParse(warehouse2Count, out warehouse2CountInt))
+                {
+                    // Создаем форму для редактирования товара на складе
+                    ManagerForm editManagerForm = new ManagerForm(connectionString);
+                    editManagerForm.Text = "Редактировать товар на складе"; // Устанавливаем название формы
+
+                    // Передаем данные в форму
+                    editManagerForm.SetInitialValues(goodId, warehouse1CountInt, warehouse2CountInt);
+
+                    // Обработчик для обновления данных после закрытия формы
+                    editManagerForm.FormClosed += (s, args) =>
+                    {
+                        // Обновляем данные в таблице после редактирования
+                        LoadManagerLogData();
+                    };
+
+                    // Показываем форму в модальном режиме
+                    editManagerForm.ShowDialog();
+                }
+                else
+                {
+                    MessageBox.Show("Ошибка при преобразовании данных в целое число.");
+                }
             }
             else if (tabControl.SelectedTab == tabGoods)
             {
