@@ -6,8 +6,14 @@
         private System.Windows.Forms.TabControl tabControl;
         private System.Windows.Forms.TabPage tabManagerLog;
         private System.Windows.Forms.TabPage tabGoods;
+        private System.Windows.Forms.TabPage tabReport; // Новая вкладка
         private System.Windows.Forms.TabPage tabSales;
         private System.Windows.Forms.DataGridView dgvManagerLog;
+        private System.Windows.Forms.DataGridView dgvReport;
+        Button btnTopProducts;
+        private Button btnAnalyzeDemand;
+        private Button btnShowGraph;  // Добавьте это поле
+
         private Label lblUserRole;
         protected override void Dispose(bool disposing)
         {
@@ -29,6 +35,8 @@
             tabSales = new TabPage();
             dataGridView2 = new DataGridView();
             lblUserRole = new Label();
+            tabReport = new TabPage(); // Инициализация новой вкладки
+            dgvReport = new DataGridView();
 
             tabControl.SuspendLayout();
             tabManagerLog.SuspendLayout();
@@ -37,6 +45,8 @@
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
             tabSales.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView2).BeginInit();
+            tabReport.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvReport).BeginInit();
             SuspendLayout();
 
             // 
@@ -45,6 +55,7 @@
             tabControl.Controls.Add(tabManagerLog);
             tabControl.Controls.Add(tabGoods);
             tabControl.Controls.Add(tabSales);
+            tabControl.Controls.Add(tabReport);
             tabControl.Dock = DockStyle.Fill;
             tabControl.Location = new Point(0, 0);
             tabControl.Name = "tabControl";
@@ -66,6 +77,15 @@
             tabManagerLog.Text = "Журнал Менеджера";
             tabManagerLog.UseVisualStyleBackColor = true;
 
+
+            tabReport.Controls.Add(dgvReport);
+            tabReport.Location = new Point(4, 29);
+            tabReport.Name = "tabReport";
+            tabReport.Padding = new Padding(3);
+            tabReport.Size = new Size(792, 467);
+            tabReport.TabIndex = 3;
+            tabReport.Text = "Отчеты";
+            tabReport.UseVisualStyleBackColor = true;
             // 
             // dgvManagerLog
             // 
@@ -138,6 +158,15 @@
             // 
             // Form1
             // 
+
+            dgvReport.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvReport.Location = new Point(8, 6);
+            dgvReport.Name = "dgvReport";
+            dgvReport.RowHeadersWidth = 51;
+            dgvReport.Size = new Size(366, 433);
+            dgvReport.TabIndex = 1;
+
+
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 500);
@@ -154,8 +183,38 @@
             tabSales.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridView2).EndInit();
             ResumeLayout(false);
-        }
 
+            btnTopProducts = new Button
+            {
+                Text = "Пять самых популярных товаров",
+                Size = new Size(300, 40),
+                Location = new Point(400, 50),
+                Name = "btnTopProducts"
+            };
+            btnTopProducts.Click += BtnTopProducts_Click;
+            tabReport.Controls.Add(btnTopProducts);
+
+            btnAnalyzeDemand = new Button
+            {
+                Text = "Анализ спроса",
+                Size = new Size(300, 40),
+                Location = new Point(400, 100), // Позиция кнопки
+                Name = "btnAnalyzeDemand"
+            };
+            btnAnalyzeDemand.Click += BtnAnalyzeDemand_Click;
+            tabReport.Controls.Add(btnAnalyzeDemand);
+
+            btnShowGraph = new Button
+            {
+                Text = "Показать график изменения спроса",
+                Size = new Size(300, 40),
+                Location = new Point(400, 150), // Позиция кнопки
+                Name = "btnShowGraph"
+            };
+            btnShowGraph.Click += BtnShowGraph_Click;
+            tabReport.Controls.Add(btnShowGraph);
+
+        }
         private void AddCommonButtons(TabPage tabPage)
         {
             // Очистка старых кнопок перед добавлением новых

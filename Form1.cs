@@ -31,6 +31,7 @@ namespace DataBass
 
             // Загрузка данных
             LoadData();
+            tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
         }
 
 
@@ -81,7 +82,15 @@ namespace DataBass
             }
         }
 
-
+        private void TabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Проверяем, что выбрана вкладка ManagerLog
+            if (tabControl.SelectedTab == tabManagerLog)
+            {
+                // Обновляем данные в таблице ManagerLog
+                LoadManagerLogData();
+            }
+        }
         private void LoadData()
         {
             try
@@ -167,8 +176,11 @@ namespace DataBass
             {
                 // Открыть форму ManagerForm для добавления товара на склад
                 ManagerForm managerForm = new ManagerForm(connectionString);
+
+                // Подписка на событие DataUpdated
+                managerForm.DataUpdated += () => LoadManagerLogData();
+
                 managerForm.ShowDialog();
-                LoadManagerLogData();
             }
             else if (tabControl.SelectedTab == tabGoods)
             {
@@ -347,10 +359,59 @@ namespace DataBass
             }
         }
 
+        private void BtnTopProducts_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // SQL-запрос для получения 5 самых популярных товаров по количеству продаж
+                string query = @"
+            SELECT 
+                g.id AS ProductID,
+                g.name AS ProductName,
+                SUM(s.good_count) AS TotalSold
+            FROM 
+                goods g
+            JOIN 
+                sales s ON g.id = s.good_id
+            GROUP BY 
+                g.id, g.name
+            ORDER BY 
+                TotalSold DESC
+            LIMIT 5;";
+
+                // Используем метод GetDataTable для выполнения запроса и получения результата
+                DataTable dataTable = GetDataTable(query);
+
+                // Устанавливаем полученные данные в DataGridView
+                dgvReport.DataSource = dataTable;
+            }
+            catch (Exception ex)
+            {
+                // Обработка ошибок при выполнении запроса
+                MessageBox.Show($"Ошибка при загрузке данных о популярных товарах: {ex.Message}",
+                                "Ошибка",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnAnalyzeDemand_Click(object sender, EventArgs e)
+        {
+            DemandAnalysisForm analysisForm = new DemandAnalysisForm(connectionString);
+            analysisForm.ShowDialog(); // Открытие формы как модального окна
+        }
 
 
+        private void BtnShowGraph_Click(object sender, EventArgs e)
+        {
+            // Получаем строку подключения из настроек или из других источников
 
+            // ID товара для отображения графика (можно запросить у пользователя или передать статически)
 
+            // Создаем и отображаем форму графика
+            DemandGraphForm demandGraphForm = new DemandGraphForm(connectionString);
+            demandGraphForm.Show();
+        }
 
 
         private void label1_Click(object sender, EventArgs e)

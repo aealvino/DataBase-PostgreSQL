@@ -4,6 +4,12 @@
     <Compile Update="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="DemandAnalysisForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="DemandGraphForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="ManagerForm.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -114,6 +114,38 @@ namespace DataBass
                     {
                         command.Parameters.Add(param);
                     }
+                    int rowsAffected = command.ExecuteNonQuery(); // Добавьте проверку на успешность выполнения
+                    if (rowsAffected == 0)
+                    {
+                        MessageBox.Show("Не удалось выполнить операцию с базой данных.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+
+        private void UpdateWarehouseStock(int goodId, int quantitySold)
+        {
+            string updateWarehouseQuery = @"
+        -- Обновляем склад 1
+        UPDATE warehouse1 
+        SET good_count = good_count - @QuantitySold
+        WHERE good_id = @GoodId AND good_count >= @QuantitySold;
+
+        -- Обновляем склад 2
+        UPDATE warehouse2 
+        SET good_count = good_count - @QuantitySold
+        WHERE good_id = @GoodId AND good_count >= @QuantitySold;
+    ";
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (NpgsqlCommand command = new NpgsqlCommand(updateWarehouseQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@GoodId", goodId);
+                    command.Parameters.AddWithValue("@QuantitySold", quantitySold);
+
                     command.ExecuteNonQuery();
                 }
             }
@@ -121,7 +153,6 @@ namespace DataBass
 
         private void UpdateStock(int goodId, int countToDeduct, string warehouse)
         {
-            // Обновление склада, уменьшая количество товара на складах
             string updateQuery = warehouse == "warehouse1"
                 ? "UPDATE warehouse1 SET good_count = good_count - @count WHERE good_id = @good_id AND good_count >= @count;"
                 : "UPDATE warehouse2 SET good_count = good_count - @count WHERE good_id = @good_id AND good_count >= @count;";
@@ -134,10 +165,15 @@ namespace DataBass
                     command.Parameters.Add(new NpgsqlParameter("@count", countToDeduct));
                     command.Parameters.Add(new NpgsqlParameter("@good_id", goodId));
 
-                    command.ExecuteNonQuery();
+                    int rowsAffected = command.ExecuteNonQuery();
+                    if (rowsAffected == 0)
+                    {
+                        throw new Exception($"Не удалось обновить склад {warehouse}. Возможно, товара недостаточно.");
+                    }
                 }
             }
         }
+
 
         private void btnSave_Click(object sender, EventArgs e)
         {
@@ -155,8 +191,9 @@ namespace DataBass
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при выполнении операции: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Ошибка при выполнении операции:\n{ex.ToString()}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
         }
 
         private void btnDelete_Click(object sender, EventArgs e)
@@ -171,7 +208,6 @@ namespace DataBass
                 MessageBox.Show($"Ошибка при удалении: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
         private void SaveSale()
         {
             if (cmbGoods.SelectedItem == null)
@@ -192,16 +228,16 @@ namespace DataBass
                 return;
             }
 
-            // Запрос для получения данных о товаре на обоих складах
+            // Запрос для получения данных о товаре на складах
             string query = @"
-                SELECT 
-                    COALESCE(w1.good_count, 0) AS warehouse1_stock,
-                    COALESCE(w2.good_count, 0) AS warehouse2_stock,
-                    (COALESCE(w1.good_count, 0) + COALESCE(w2.good_count, 0)) AS total_stock
-                FROM goods g
-                LEFT JOIN warehouse1 w1 ON g.id = w1.good_id
-                LEFT JOIN warehouse2 w2 ON g.id = w2.good_id
-                WHERE g.id = @good_id";
+        SELECT 
+            COALESCE(w1.good_count, 0) AS warehouse1_stock,
+            COALESCE(w2.good_count, 0) AS warehouse2_stock,
+            (COALESCE(w1.good_count, 0) + COALESCE(w2.good_count, 0)) AS total_stock
+        FROM goods g
+        LEFT JOIN warehouse1 w1 ON g.id = w1.good_id
+        LEFT JOIN warehouse2 w2 ON g.id = w2.good_id
+        WHERE g.id = @good_id";
 
             int warehouse1Stock = 0, warehouse2Stock = 0, totalStock = 0;
 
@@ -225,34 +261,65 @@ namespace DataBass
             }
 
             // Логика проверки, есть ли достаточное количество товара
-            if (count > warehouse1Stock + warehouse2Stock)
+            if (count > totalStock)
             {
-                MessageBox.Show("Недостаточно товара на складах для продажи!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Недостаточно товара на складах!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
+            // Добавляем запись о продаже
+            string insertQuery = "INSERT INTO sales (good_id, good_count, create_date) VALUES (@good_id, @good_count, @create_date) RETURNING id";
+            int saleId;
+
+            using (var connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = new NpgsqlCommand(insertQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@good_id", goodId);
+                    command.Parameters.AddWithValue("@good_count", count);
+                    command.Parameters.AddWithValue("@create_date", dtpDate.Value);
+
+                    // Получаем id вставленной продажи
+                    saleId = (int)command.ExecuteScalar();
+                }
+            }
+
+            // После успешного добавления продажи обновляем склады
             int countToDeduct = count;
-            // Сначала пытаемся уменьшить товар на складе 1
+
+            // Сначала уменьшаем товар на складе 1, если возможно
             if (countToDeduct <= warehouse1Stock)
             {
-                // Уменьшаем товар на складе 1
                 UpdateStock(goodId, countToDeduct, "warehouse1");
             }
             else
             {
-                // Уменьшаем товар на складе 1 до его нуля, остаток убираем со склада 2
+                // Уменьшаем товар на складе 1 до его нуля, остаток забираем со склада 2
                 countToDeduct -= warehouse1Stock;
                 UpdateStock(goodId, warehouse1Stock, "warehouse1");
-                UpdateStock(goodId, countToDeduct, "warehouse2");
+
+                // Теперь уменьшаем остаток товара на складе 2
+                if (countToDeduct <= warehouse2Stock)
+                {
+                    UpdateStock(goodId, countToDeduct, "warehouse2");
+                }
+                else
+                {
+                    // Если на складе 2 недостаточно товара, откатываем изменения в базе
+                    MessageBox.Show("Недостаточно товара на складе 2!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                    // Удаляем запись о продаже, так как товар не был полностью списан
+                    string deleteSaleQuery = "DELETE FROM sales WHERE id = @sale_id";
+                    ExecuteNonQuery(deleteSaleQuery, new NpgsqlParameter("@sale_id", saleId));
+
+                    return;
+                }
             }
 
-            // Сохраняем продажу
-            string insertQuery = "INSERT INTO sales (good_id, good_count, create_date) VALUES (@good_id, @good_count, @create_date)";
-            ExecuteNonQuery(insertQuery, new NpgsqlParameter("@good_id", goodId),
-                                              new NpgsqlParameter("@good_count", count),
-                                              new NpgsqlParameter("@create_date", dtpDate.Value));
-
             MessageBox.Show("Продажа успешно добавлена!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            // Если после добавления продажи требуется обновить основной интерфейс
             SalesUpdated?.Invoke();
             this.Close();
         }
@@ -279,11 +346,151 @@ namespace DataBass
             SalesUpdated?.Invoke();
             this.Close();
         }
-
         private void EditSale()
         {
-            // Реализовать логику редактирования продажи, используя saleId
-            // Для редактирования нужно будет использовать сохраненные параметры saleId и обновить информацию в БД
+            if (!saleId.HasValue)
+            {
+                MessageBox.Show("ID продажи не задан!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (cmbGoods.SelectedItem == null)
+            {
+                MessageBox.Show("Выберите товар для продажи!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var selectedGood = (dynamic)cmbGoods.SelectedItem;
+            int goodId = selectedGood.Id;
+            int newCount = int.Parse(txtCount.Text);
+            DateTime newDate = dtpDate.Value;
+
+            // Загрузка текущей информации о продаже
+            string selectSaleQuery = "SELECT good_id, good_count FROM sales WHERE id = @sale_id";
+            int currentGoodId = 0, currentCount = 0;
+
+            using (var connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = new NpgsqlCommand(selectSaleQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@sale_id", saleId.Value);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            currentGoodId = reader.GetInt32(reader.GetOrdinal("good_id"));
+                            currentCount = reader.GetInt32(reader.GetOrdinal("good_count"));
+                        }
+                    }
+                }
+            }
+
+            if (currentGoodId == 0)
+            {
+                MessageBox.Show("Продажа не найдена!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Возвращаем остаток текущего товара на склад
+            if (currentCount > 0)
+            {
+                RestoreStock(currentGoodId, currentCount);
+            }
+
+            // Проверяем наличие достаточного количества нового товара
+            int totalStock = GetTotalStock(goodId);
+
+            if (newCount > totalStock)
+            {
+                MessageBox.Show("Недостаточно товара на складах!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Обновляем запись о продаже
+            string updateSaleQuery = "UPDATE sales SET good_id = @good_id, good_count = @good_count, create_date = @create_date WHERE id = @sale_id";
+
+            ExecuteNonQuery(updateSaleQuery,
+                new NpgsqlParameter("@good_id", goodId),
+                new NpgsqlParameter("@good_count", newCount),
+                new NpgsqlParameter("@create_date", newDate),
+                new NpgsqlParameter("@sale_id", saleId.Value));
+
+            // Списываем товар с нового склада
+            DeductStock(goodId, newCount);
+
+            MessageBox.Show("Продажа успешно обновлена!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            SalesUpdated?.Invoke();
+            this.Close();
         }
+        private void RestoreStock(int goodId, int count)
+        {
+            int remaining = count;
+
+            // Сначала возвращаем на склад 1
+            UpdateStock(goodId, -Math.Min(GetStock(goodId, "warehouse1"), remaining), "warehouse1");
+            remaining -= Math.Min(GetStock(goodId, "warehouse1"), remaining);
+
+            if (remaining > 0)
+            {
+                // Остаток возвращаем на склад 2
+                UpdateStock(goodId, -remaining, "warehouse2");
+            }
+        }
+        private int GetTotalStock(int goodId)
+        {
+            string query = @"
+        SELECT 
+            COALESCE(w1.good_count, 0) + COALESCE(w2.good_count, 0) AS total_stock
+        FROM goods g
+        LEFT JOIN warehouse1 w1 ON g.id = w1.good_id
+        LEFT JOIN warehouse2 w2 ON g.id = w2.good_id
+        WHERE g.id = @good_id";
+
+            using (var connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@good_id", goodId);
+                    return (int)command.ExecuteScalar();
+                }
+            }
+        }
+        private int GetStock(int goodId, string warehouse)
+        {
+            string query = warehouse == "warehouse1"
+                ? "SELECT COALESCE(good_count, 0) FROM warehouse1 WHERE good_id = @good_id"
+                : "SELECT COALESCE(good_count, 0) FROM warehouse2 WHERE good_id = @good_id";
+
+            using (var connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@good_id", goodId);
+
+                    var result = command.ExecuteScalar();
+                    return result != DBNull.Value ? Convert.ToInt32(result) : 0;
+                }
+            }
+        }
+
+        private void DeductStock(int goodId, int count)
+        {
+            int remaining = count;
+
+            // Сначала списываем со склада 1
+            UpdateStock(goodId, Math.Min(GetStock(goodId, "warehouse1"), remaining), "warehouse1");
+            remaining -= Math.Min(GetStock(goodId, "warehouse1"), remaining);
+
+            if (remaining > 0)
+            {
+                // Остаток списываем со склада 2
+                UpdateStock(goodId, remaining, "warehouse2");
+            }
+        }
+
+
     }
 }

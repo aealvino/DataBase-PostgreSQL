@@ -8,6 +8,7 @@ namespace DataBass
     public partial class ManagerForm : Form
     {
         private string connectionString;
+        public event Action DataUpdated;
 
         public ManagerForm(string connectionString)
         {
@@ -19,7 +20,10 @@ namespace DataBass
             this.connectionString = connectionString;
             LoadData(); // Загрузка данных о товарах и складах
         }
-
+        private void OnDataUpdated()
+        {
+            DataUpdated?.Invoke();
+        }
         // Метод для загрузки данных о складах и товарах
         private void LoadData()
         {
@@ -86,7 +90,7 @@ namespace DataBass
 
                 MessageBox.Show("Товар успешно добавлен на склад.");
                 this.Close();  // Закрываем форму после успешного добавления
-
+                OnDataUpdated();
                 // Обновляем таблицы в главной форме
                 if (Owner is Form1 mainForm)
                 {
@@ -137,7 +141,7 @@ namespace DataBass
                         MessageBox.Show("Товар не найден на выбранном складе.");
                     }
                 }
-
+                OnDataUpdated();
                 // Закрываем форму после удаления
                 this.Close();
             }
@@ -194,7 +198,7 @@ namespace DataBass
                         MessageBox.Show("Товар не найден на складе.");
                     }
                 }
-
+                OnDataUpdated();
                 // Закрываем форму после обновления
                 this.Close();
             }
