@@ -38,7 +38,10 @@
             lblDate = new Label();
             btnSave = new Button();
             btnDelete = new Button();
+            cmbWarehouse = new ComboBox();
+            lblWarehouse = new Label();
             SuspendLayout();
+
             // 
             // txtSaleId
             // 
@@ -47,6 +50,7 @@
             txtSaleId.ReadOnly = true;
             txtSaleId.Size = new Size(200, 27);
             txtSaleId.TabIndex = 0;
+
             // 
             // lblSaleId
             // 
@@ -56,6 +60,7 @@
             lblSaleId.Size = new Size(94, 20);
             lblSaleId.TabIndex = 1;
             lblSaleId.Text = "ID продажи:";
+
             // 
             // cmbGoods
             // 
@@ -64,6 +69,7 @@
             cmbGoods.Name = "cmbGoods";
             cmbGoods.Size = new Size(200, 28);
             cmbGoods.TabIndex = 2;
+
             // 
             // lblGood
             // 
@@ -73,6 +79,7 @@
             lblGood.Size = new Size(54, 20);
             lblGood.TabIndex = 3;
             lblGood.Text = "Товар:";
+
             // 
             // txtCount
             // 
@@ -80,6 +87,7 @@
             txtCount.Name = "txtCount";
             txtCount.Size = new Size(200, 27);
             txtCount.TabIndex = 4;
+
             // 
             // lblCount
             // 
@@ -89,6 +97,7 @@
             lblCount.Size = new Size(93, 20);
             lblCount.TabIndex = 5;
             lblCount.Text = "Количество:";
+
             // 
             // dtpDate
             // 
@@ -96,6 +105,7 @@
             dtpDate.Name = "dtpDate";
             dtpDate.Size = new Size(200, 27);
             dtpDate.TabIndex = 6;
+
             // 
             // lblDate
             // 
@@ -105,30 +115,55 @@
             lblDate.Size = new Size(111, 20);
             lblDate.TabIndex = 7;
             lblDate.Text = "Дата продажи:";
+
             // 
             // btnSave
             // 
-            btnSave.Location = new Point(120, 200);
+            btnSave.Location = new Point(120, 250);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(90, 30);
             btnSave.TabIndex = 8;
             btnSave.Text = "Сохранить";
             btnSave.UseVisualStyleBackColor = true;
             btnSave.Click += btnSave_Click;
+
             // 
             // btnDelete
             // 
-            btnDelete.Location = new Point(230, 200);
+            btnDelete.Location = new Point(230, 250);
             btnDelete.Name = "btnDelete";
             btnDelete.Size = new Size(90, 30);
             btnDelete.TabIndex = 9;
             btnDelete.Text = "Удалить";
             btnDelete.UseVisualStyleBackColor = true;
             btnDelete.Click += btnDelete_Click;
+
+            // 
+            // cmbWarehouse
+            // 
+            cmbWarehouse.FormattingEnabled = true;
+            cmbWarehouse.Items.AddRange(new object[] { "Склад 1", "Склад 2", "Оба склада" });
+            cmbWarehouse.Location = new Point(120, 190);
+            cmbWarehouse.Name = "cmbWarehouse";
+            cmbWarehouse.Size = new Size(200, 28);
+            cmbWarehouse.TabIndex = 10;
+
+            // 
+            // lblWarehouse
+            // 
+            lblWarehouse.AutoSize = true;
+            lblWarehouse.Location = new Point(30, 190);
+            lblWarehouse.Name = "lblWarehouse";
+            lblWarehouse.Size = new Size(82, 20);
+            lblWarehouse.TabIndex = 11;
+            lblWarehouse.Text = "Выбор склада:";
+
             // 
             // SalesForm
             // 
             ClientSize = new Size(400, 300);
+            Controls.Add(lblWarehouse);
+            Controls.Add(cmbWarehouse);
             Controls.Add(btnDelete);
             Controls.Add(btnSave);
             Controls.Add(lblDate);
@@ -148,15 +183,17 @@
 
         #endregion
 
-        private System.Windows.Forms.TextBox txtSaleId;
-        private System.Windows.Forms.Label lblSaleId;
-        private System.Windows.Forms.ComboBox cmbGoods;
-        private System.Windows.Forms.Label lblGood;
-        private System.Windows.Forms.TextBox txtCount;
-        private System.Windows.Forms.Label lblCount;
-        private System.Windows.Forms.DateTimePicker dtpDate;
-        private System.Windows.Forms.Label lblDate;
-        private System.Windows.Forms.Button btnSave;
-        private System.Windows.Forms.Button btnDelete;
+        private ComboBox cmbWarehouse;
+        private Label lblWarehouse;
+        private TextBox txtSaleId;
+        private Label lblSaleId;
+        private ComboBox cmbGoods;
+        private Label lblGood;
+        private TextBox txtCount;
+        private Label lblCount;
+        private DateTimePicker dtpDate;
+        private Label lblDate;
+        private Button btnSave;
+        private Button btnDelete;
     }
 }

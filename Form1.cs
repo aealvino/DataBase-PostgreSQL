@@ -261,22 +261,57 @@ namespace DataBass
             }
             else if (tabControl.SelectedTab == tabSales)
             {
-                // Логика для удаления продажи
+                // Проверяем, что выбраны строки для удаления
                 if (dataGridView2.SelectedRows.Count == 0)
                 {
-                    MessageBox.Show("Выберите продажу для удаления!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Выберите хотя бы одну продажу для удаления!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                int selectedSaleId = Convert.ToInt32(dataGridView2.SelectedRows[0].Cells["ПродажаID"].Value);
-                SalesForm deleteSalesForm = new SalesForm(connectionString, FormAction.Delete, selectedSaleId);
-                deleteSalesForm.SalesUpdated += () => LoadSalesData();
-                deleteSalesForm.ShowDialog();
+                // Подтверждение удаления
+                DialogResult dialogResult = MessageBox.Show("Вы уверены, что хотите удалить выбранные продажи?", "Подтверждение", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (dialogResult == DialogResult.Yes)
+                {
+                    try
+                    {
+                        // Открытие соединения с базой данных
+                        using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                        {
+                            connection.Open();
+
+                            foreach (DataGridViewRow row in dataGridView2.SelectedRows)
+                            {
+                                // Получаем ID продажи из выбранной строки
+                                int selectedSaleId = Convert.ToInt32(row.Cells["ПродажаID"].Value);
+
+                                // Запрос для удаления записи о продаже
+                                string deleteQuery = @"
+                            DELETE FROM sales
+                            WHERE id = @SaleId;
+                        ";
+
+                                // Выполнение запроса на удаление
+                                using (NpgsqlCommand command = new NpgsqlCommand(deleteQuery, connection))
+                                {
+                                    command.Parameters.AddWithValue("@SaleId", selectedSaleId);
+                                    command.ExecuteNonQuery();
+                                }
+                            }
+                        }
+
+                        // Обновляем данные после удаления
+                        LoadSalesData();
+                        MessageBox.Show("Выбранные продажи успешно удалены.", "Удаление", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка при удалении продаж: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
             }
             else
             {
-                // Логика для других вкладок
-                MessageBox.Show("Удаление в этой вкладке не поддерживается.");
+                MessageBox.Show("Удаление в этой вкладке не поддерживается.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -363,21 +398,20 @@ namespace DataBass
         {
             try
             {
-                // SQL-запрос для получения 5 самых популярных товаров по количеству продаж
                 string query = @"
-            SELECT 
-                g.id AS ProductID,
-                g.name AS ProductName,
-                SUM(s.good_count) AS TotalSold
-            FROM 
-                goods g
-            JOIN 
-                sales s ON g.id = s.good_id
-            GROUP BY 
-                g.id, g.name
-            ORDER BY 
-                TotalSold DESC
-            LIMIT 5;";
+                SELECT 
+                    g.id AS ProductID,
+                    g.name AS ProductName,
+                    SUM(s.good_count) AS TotalSold
+                FROM 
+                    goods g
+                JOIN 
+                    sales s ON g.id = s.good_id
+                GROUP BY 
+                    g.id, g.name
+                ORDER BY 
+                    TotalSold DESC
+                LIMIT 5;";
 
                 // Используем метод GetDataTable для выполнения запроса и получения результата
                 DataTable dataTable = GetDataTable(query);
